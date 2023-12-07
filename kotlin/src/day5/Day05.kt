@@ -2,10 +2,6 @@ package day5
 
 import println
 import read
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.withContext
 
 suspend fun main() {
 
@@ -84,26 +80,29 @@ suspend fun main() {
   }
 
   fun part2(almanac: Almanac): Long {
-    val mappings = almanac.mappings;
-
-    val chunkedSeeds = almanac.seeds
-      .asSequence()
+    val seedRanges = almanac.seeds
       .chunked(2)
-      .distinct()
+      .map { (seed, range) -> seed until seed + range }
 
-    var smallestLocation = Long.MAX_VALUE
-
-    for (seedAndRange in chunkedSeeds) {
-      for (seed in seedAndRange[0] until seedAndRange[1] + seedAndRange[0]) {
-        val location = mappings.fold(seed) { target, mappingRanges -> map(mappingRanges, target) }
-
-        if (location < smallestLocation) {
-          smallestLocation = location
-        }
+    val reversedMappings = almanac.mappings
+      .reversed()
+      .map { mappings ->
+        mappings.map { mapping -> MappingRange(mapping.destination, mapping.source) }
       }
-    }
 
-    return smallestLocation
+    var found = false
+    var location = 0L
+
+    do {
+      val seed = reversedMappings.fold(location) { target, mappingRanges -> map(mappingRanges, target) }
+      if (seedRanges.any { seed in it }) {
+        found = true
+      } else {
+        location++
+      }
+    } while (!found)
+
+    return location
   }
 
   val exampleAlmanac = parseAlmanac("day5/input_example")
